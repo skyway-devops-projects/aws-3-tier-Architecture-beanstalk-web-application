@@ -95,11 +95,11 @@ resource "aws_security_group" "backend_sg" {
     security_groups = [aws_security_group.bastion_sg.id]
   }
 
-    ingress {
-    description = "Allow DB access from bastion host"
-    from_port   = 3306
-    to_port     = 3306
-    protocol    = "tcp"
+  ingress {
+    description     = "Allow DB access from bastion host"
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
     security_groups = [aws_security_group.bastion_sg.id]
   }
 

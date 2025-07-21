@@ -1,4 +1,3 @@
 #!/bin/bash
-sudo apt update
-sudo apt upgrade -y
-sudo apt install mysql-client -y 
+sudo dnf update -y
+sudo dnf install mariadb105  -y 

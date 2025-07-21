@@ -13,15 +13,15 @@ variable "project_name" {
   description = "Project name"
 }
 
-variable "iam_user_name" {
-  type = string
-}
-variable "bucket_name" {
-  type = string
-}
-variable "table_name" {
-  type = string
-}
+# variable "iam_user_name" {
+#   type = string
+# }
+# variable "bucket_name" {
+#   type = string
+# }
+# variable "table_name" {
+#   type = string
+# }
 variable "vpc_cidr" {
   type        = string
   description = "CIDR block for VPC"

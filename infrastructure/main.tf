@@ -31,7 +31,7 @@ module "rds_mysq" {
   engine_version        = var.engine_version
   instance_class        = var.instance_class
   db_name               = var.db_name
-  username              = var.iam_user_name
+  username              = var.username  
   password              = var.password
   db_private_subnet_ids = module.vpc.private_subnet_ids
   db_security_group_id  = module.security.db_security_group_id
@@ -68,8 +68,9 @@ resource "aws_instance" "bastion_host" {
   vpc_security_group_ids = [module.security.bastion_security_group_id]
   subnet_id              = element(module.vpc.public_subnet_ids, 0)
   key_name               = var.key_name
-  iam_instance_profile   = aws_iam_instance_profile.ec2_instance_profile.name
-  tags                   = merge(local.common_tags, { Name = "${local.name}-baston-host" })
+  user_data              = templatefile("${path.module}/scripts/install-mysql-client.sh", {})
+  # iam_instance_profile   = aws_iam_instance_profile.ec2_instance_profile.name
+  tags = merge(local.common_tags, { Name = "${local.name}-baston-host" })
   provisioner "file" {
     connection {
       type        = "ssh"
@@ -80,7 +81,7 @@ resource "aws_instance" "bastion_host" {
     source      = "${path.module}/private_key/vprofile-dev.pem"
     destination = "/home/ec2-user/vprofile-dev.pem"
   }
-   provisioner "file" {
+  provisioner "file" {
     connection {
       type        = "ssh"
       user        = "ec2-user"
