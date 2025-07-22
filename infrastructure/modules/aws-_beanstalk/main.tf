@@ -42,6 +42,3 @@ resource "aws_iam_role_policy_attachment" "role-policy-attachment" {
   policy_arn = each.value
 }
 
-resource "aws_elastic_beanstalk_environment" "name" {
-  
-}
