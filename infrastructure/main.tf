@@ -51,7 +51,7 @@ module "elasticache_radis" {
   db_private_subnet_ids = module.vpc.private_subnet_ids
   db_security_group_id  = module.security.db_security_group_id
   # parameter_group_name  = var.redis_parameter_group_name
-  depends_on            = [module.vpc]
+  depends_on = [module.vpc]
 }
 
 module "activemq" {
