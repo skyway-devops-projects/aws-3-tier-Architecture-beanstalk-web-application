@@ -35,32 +35,35 @@ module "rds_mysq" {
   password              = var.password
   db_private_subnet_ids = module.vpc.private_subnet_ids
   db_security_group_id  = module.security.db_security_group_id
+  depends_on = [ module.vpc ]
 }
 
 
 
-# module "elasticache_radis" {
-#   source                = "./modules/aws-elasticache"
-#   environment           = var.environment
-#   project_name          = var.project_name
-#   engine                = var.redis_engine
-#   engine_version        = var.redis_engine_version
-#   node_type             = var.redis_node_type
-#   port                  = var.redis_port
-#   db_private_subnet_ids = module.vpc.private_subnet_ids
-#   db_security_group_id  = module.security.db_security_group_id
-#   parameter_group_name  = var.redis_parameter_group_name
-# }
+module "elasticache_radis" {
+  source                = "./modules/aws-elasticache"
+  environment           = var.environment
+  project_name          = var.project_name
+  engine                = var.redis_engine
+  engine_version        = var.redis_engine_version
+  node_type             = var.redis_node_type
+  port                  = var.redis_port
+  db_private_subnet_ids = module.vpc.private_subnet_ids
+  db_security_group_id  = module.security.db_security_group_id
+  parameter_group_name  = var.redis_parameter_group_name
+  depends_on = [ module.vpc ]
+}
 
-# module "activemq" {
-#   source = "./modules/aws-active-mq"
-#   environment           = var.environment
-#   project_name          = var.project_name
-#   security_group_id = module.security.db_security_group_id
-#   private_subnet_ids = module.vpc.private_subnet_ids
-#   username = var.active_mq_username
-#   password = var.active_mq_password
-# }
+module "activemq" {
+  source = "./modules/aws-active-mq"
+  environment           = var.environment
+  project_name          = var.project_name
+  security_group_id = module.security.db_security_group_id
+  private_subnet_ids = module.vpc.private_subnet_ids
+  username = var.active_mq_username
+  password = var.active_mq_password
+  depends_on = [ module.vpc ]
+}
 
 resource "aws_instance" "bastion_host" {
   ami                    = data.aws_ami.amzn_linux_2023_latest.id
