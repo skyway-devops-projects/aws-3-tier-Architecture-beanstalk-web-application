@@ -44,10 +44,10 @@ module "elasticache_radis" {
   source                = "./modules/aws-elasticache"
   environment           = var.environment
   project_name          = var.project_name
-  engine                = var.redis_engine
-  engine_version        = var.redis_engine_version
-  node_type             = var.redis_node_type
-  port                  = var.redis_port
+  engine                = var.memcached_engine
+  engine_version        = var.memcached_engine_version
+  node_type             = var.memcached_node_type
+  port                  = var.memcached_port
   db_private_subnet_ids = module.vpc.private_subnet_ids
   db_security_group_id  = module.security.db_security_group_id
   # parameter_group_name  = var.redis_parameter_group_name

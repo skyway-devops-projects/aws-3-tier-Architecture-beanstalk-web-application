@@ -80,17 +80,17 @@ variable "password" {
   sensitive   = true
 }
 
-variable "redis_engine" {
+variable "memcached_engine" {
   type        = string
   description = "Redis Engine"
 }
 
-variable "redis_engine_version" {
+variable "memcached_engine_version" {
   type        = string
   description = "Redis Engine Version"
 }
 
-variable "redis_node_type" {
+variable "memcached_node_type" {
   type        = string
   description = "Node Type"
 }
@@ -100,7 +100,7 @@ variable "redis_node_type" {
 #   description = "Parameter Group Name"
 # }
 
-variable "redis_port" {
+variable "memcached_port" {
   type        = string
   description = "redis port"
 }

@@ -21,12 +21,12 @@ variable "db_security_group_id" {
 
 variable "engine" {
   type        = string
-  description = "Redis Engine"
+  description = "Memcached Engine"
 }
 
 variable "engine_version" {
   type        = string
-  description = "Redis Engine Version"
+  description = "Memcached Engine Version"
 }
 
 variable "node_type" {
