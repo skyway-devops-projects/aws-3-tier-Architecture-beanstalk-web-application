@@ -8,8 +8,8 @@ variable "project_name" {
   description = "Project name"
 }
 
-variable "private_subnet_ids" {
-  type        = list(string)
+variable "private_subnet_id" {
+  type        = string
   description = "Database  private subnetids"
 }
 

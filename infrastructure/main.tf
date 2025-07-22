@@ -59,7 +59,7 @@ module "activemq" {
   environment        = var.environment
   project_name       = var.project_name
   security_group_id  = module.security.db_security_group_id
-  private_subnet_ids = module.vpc.private_subnet_ids
+  private_subnet_id = element(module.vpc.private_subnet_ids, 0)
   username           = var.active_mq_username
   password           = var.active_mq_password
   depends_on         = [module.vpc]
