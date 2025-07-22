@@ -31,11 +31,11 @@ module "rds_mysq" {
   engine_version        = var.engine_version
   instance_class        = var.instance_class
   db_name               = var.db_name
-  username              = var.username  
+  username              = var.username
   password              = var.password
   db_private_subnet_ids = module.vpc.private_subnet_ids
   db_security_group_id  = module.security.db_security_group_id
-  depends_on = [ module.vpc ]
+  depends_on            = [module.vpc]
 }
 
 
@@ -50,19 +50,19 @@ module "elasticache_radis" {
   port                  = var.redis_port
   db_private_subnet_ids = module.vpc.private_subnet_ids
   db_security_group_id  = module.security.db_security_group_id
-  parameter_group_name  = var.redis_parameter_group_name
-  depends_on = [ module.vpc ]
+  # parameter_group_name  = var.redis_parameter_group_name
+  depends_on            = [module.vpc]
 }
 
 module "activemq" {
-  source = "./modules/aws-active-mq"
-  environment           = var.environment
-  project_name          = var.project_name
-  security_group_id = module.security.db_security_group_id
+  source             = "./modules/aws-active-mq"
+  environment        = var.environment
+  project_name       = var.project_name
+  security_group_id  = module.security.db_security_group_id
   private_subnet_ids = module.vpc.private_subnet_ids
-  username = var.active_mq_username
-  password = var.active_mq_password
-  depends_on = [ module.vpc ]
+  username           = var.active_mq_username
+  password           = var.active_mq_password
+  depends_on         = [module.vpc]
 }
 
 resource "aws_instance" "bastion_host" {

@@ -34,10 +34,10 @@ variable "node_type" {
   description = "Node Type"
 }
 
-variable "parameter_group_name" {
-  type        = string
-  description = "Parameter Group Name"
-}
+# variable "parameter_group_name" {
+#   type        = string
+#   description = "Parameter Group Name"
+# }
 
 variable "port" {
   type        = string

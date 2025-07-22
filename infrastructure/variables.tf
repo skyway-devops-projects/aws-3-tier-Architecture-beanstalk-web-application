@@ -95,10 +95,10 @@ variable "redis_node_type" {
   description = "Node Type"
 }
 
-variable "redis_parameter_group_name" {
-  type        = string
-  description = "Parameter Group Name"
-}
+# variable "redis_parameter_group_name" {
+#   type        = string
+#   description = "Parameter Group Name"
+# }
 
 variable "redis_port" {
   type        = string
