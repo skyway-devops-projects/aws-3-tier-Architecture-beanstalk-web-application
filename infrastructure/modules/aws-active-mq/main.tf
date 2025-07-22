@@ -17,7 +17,7 @@ resource "aws_mq_broker" "activemq" {
     username = var.username
     password = var.password # Store in SSM in production
   }
-  subnet_ids      = var.private_subnet_ids
+  subnet_ids      = [var.private_subnet_id]
   security_groups = [var.security_group_id]
   auto_minor_version_upgrade = true 
   logs {
