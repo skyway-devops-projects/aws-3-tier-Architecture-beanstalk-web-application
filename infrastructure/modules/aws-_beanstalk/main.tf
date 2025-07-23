@@ -11,6 +11,15 @@ resource "aws_elastic_beanstalk_application" "vprofile_app" {
   description = "Vprofile Java application"
 }
 
+resource "aws_elastic_beanstalk_application_version" "app_version" {
+  name        = "v1"
+  application = aws_elastic_beanstalk_application.vprofile_app.name
+  description = "Version 1"
+
+  bucket = var.bucket_id
+  key    = var.bucket_key
+}
+
 resource "aws_iam_role" "role" {
   name = "${local.name}-web-app-role"
   assume_role_policy = jsonencode({
@@ -33,19 +42,38 @@ resource "aws_iam_instance_profile" "subject_profile" {
 }
 
 resource "aws_iam_role_policy_attachment" "role-policy-attachment" {
-    for_each = toset([
+  for_each = toset([
     "arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier",
     "arn:aws:iam::aws:policy/AWSElasticBeanstalkMulticontainerDocker",
     "arn:aws:iam::aws:policy/AWSElasticBeanstalkWorkerTier",
   ])
-  role = aws_iam_role.role.name
+  role       = aws_iam_role.role.name
   policy_arn = each.value
 }
 
+
 resource "aws_elastic_beanstalk_environment" "vprofile_app_env" {
-  name =  "${local.name}-vprofile-app-environment"
-  application = aws_elastic_beanstalk_application.vprofile_app.name
-  solution_stack_name = "64bit Amazon Linux 2 v3.5.11 running Tomcat 8.5 Corretto 11"
+  name                = "${local.name}-vprofile-app-environment"
+  application         = aws_elastic_beanstalk_application.vprofile_app.name
+  solution_stack_name = var.solution_stack_name
+
+setting {
+  namespace = "aws:elb:policies"
+  name      = "StickinessEnabled"
+  value     = "true"
+}
+
+setting {
+  namespace = "aws:elb:policies"
+  name      = "StickinessType"
+  value     = "lb_cookie"
+}
+
+setting {
+  namespace = "aws:elb:policies"
+  name      = "LBCookieDurationSeconds"
+  value     = "3600"  # 1 hour
+}
 
 
   setting {
@@ -57,23 +85,23 @@ resource "aws_elastic_beanstalk_environment" "vprofile_app_env" {
   setting {
     namespace = "aws:ec2:vpc"
     name      = "Subnets"
-    value     = join(",", var.private_subnet_ids[*].id)
+    value     = var.private_subnet_ids
   }
 
-    setting {
+  setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name      = "EC2KeyName"
-    value     = var.key_name  # or hardcoded like "my-key-pair"
+    value     = var.key_name # or hardcoded like "my-key-pair"
   }
 
-   setting {
+  setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name      = "SecurityGroups"
-    value     = vat.security_group_id.id
+    value     = var.security_group_id
   }
 
 
-    setting {
+  setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name      = "IamInstanceProfile"
     value     = aws_iam_instance_profile.subject_profile.name
@@ -88,7 +116,7 @@ resource "aws_elastic_beanstalk_environment" "vprofile_app_env" {
 
 
 
-   # Root volume size (in GB)
+  # Root volume size (in GB)
   setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name      = "RootVolumeSize"
@@ -104,10 +132,26 @@ resource "aws_elastic_beanstalk_environment" "vprofile_app_env" {
 
 
 
-   ##################
+  ##################
   # LOAD BALANCER  #
   ##################
+setting {
+    namespace = "aws:ec2:vpc"
+    name      = "ELBSubnets"
+    value     = var.public_subnet_ids
+  }
+  setting {
+    namespace = "aws:elasticbeanstalk:environment"
+    name      = "LoadBalancerType"
+    value     = "application"  # or "classic"
+  }
 
+  # Public Load Balancer
+setting {
+  namespace = "aws:ec2:vpc"
+  name      = "ELBScheme"
+  value     = "internet-facing" # or "internal"
+}
   setting {
     namespace = "aws:elb:loadbalancer"
     name      = "SecurityGroups"
@@ -122,11 +166,11 @@ resource "aws_elastic_beanstalk_environment" "vprofile_app_env" {
 
 
 
-  setting {
-    namespace = "aws:elb:loadbalancer"
-    name      = "LoadBalancerScheme"
-    value     = "internet-facing"
-  }
+  # setting {
+  #   namespace = "aws:elb:loadbalancer"
+  #   name      = "LoadBalancerScheme"
+  #   value     = "internet-facing"
+  # }
 
   setting {
     namespace = "aws:elb:listener"
@@ -152,15 +196,62 @@ resource "aws_elastic_beanstalk_environment" "vprofile_app_env" {
     value     = "HTTP"
   }
 
+  
+
+ 
+  # Add HTTPS listener with certificate
+  setting {
+    namespace = "aws:elbv2:listener:443"
+    name      = "ListenerEnabled"
+    value     = "true"
+  }
+
+  setting {
+    namespace = "aws:elbv2:listener:443"
+    name      = "Protocol"
+    value     = "HTTPS"
+  }
+
+  setting {
+    namespace = "aws:elbv2:listener:443"
+    name      = "SSLPolicy"
+    value     = "ELBSecurityPolicy-2016-08"
+  }
+
+  setting {
+    namespace = "aws:elbv2:listener:443"
+    name      = "SSLCertificateArns"
+    value     = var.certificate_arn
+  }
+
+  # # Optionally add HTTP->HTTPS redirection
+  # setting {
+  #   namespace = "aws:elbv2:listener:80"
+  #   name      = "DefaultProcess"
+  #   value     = ""
+  # }
+
   ##################
   # HEALTH CHECK   #
   ##################
+# Define the application process port (Tomcat runs on 8080)
+setting {
+  namespace = "aws:elasticbeanstalk:environment:process:default"
+  name      = "Port"
+  value     = "8080"
+}
 
-  setting {
-    namespace = "aws:elb:healthcheck"
-    name      = "Target"
-    value     = "HTTP:80/"
-  }
+setting {
+  namespace = "aws:elasticbeanstalk:environment:process:default"
+  name      = "Protocol"
+  value     = "HTTP"
+}
+
+ setting {
+  namespace = "aws:elasticbeanstalk:environment:process:default"
+  name      = "HealthCheckPath"
+  value     = "/login"
+}
 
   setting {
     namespace = "aws:elb:healthcheck"
@@ -208,7 +299,7 @@ resource "aws_elastic_beanstalk_environment" "vprofile_app_env" {
     name      = "Cooldown"
     value     = "300"
   }
-   setting {
+  setting {
     namespace = "aws:autoscaling:launchconfiguration"
     name      = "InstanceType"
     value     = "t2.micro"
@@ -218,7 +309,7 @@ resource "aws_elastic_beanstalk_environment" "vprofile_app_env" {
   # Auto Scaling Trigger #
   ########################
 
-   setting {
+  setting {
     namespace = "aws:autoscaling:trigger"
     name      = "MeasureName"
     value     = "NetworkOut"
@@ -239,7 +330,7 @@ resource "aws_elastic_beanstalk_environment" "vprofile_app_env" {
   setting {
     namespace = "aws:autoscaling:trigger"
     name      = "Period"
-    value     = "60"  # in seconds
+    value     = "60" # in seconds
   }
 
   setting {
@@ -248,11 +339,11 @@ resource "aws_elastic_beanstalk_environment" "vprofile_app_env" {
     value     = "2"
   }
 
-  setting {
-    namespace = "aws:autoscaling:trigger"
-    name      = "Threshold"
-    value     = "50000000"  # 50 MB
-  }
+  # setting {
+  #   namespace = "aws:autoscaling:trigger"
+  #   name      = "Threshold"
+  #   value     = "50000000" # 50 MB
+  # }
 
   setting {
     namespace = "aws:autoscaling:trigger"
@@ -260,19 +351,19 @@ resource "aws_elastic_beanstalk_environment" "vprofile_app_env" {
     value     = "120"
   }
 
-  setting {
-    namespace = "aws:autoscaling:trigger"
-    name      = "ScalingAdjustment"
-    value     = "1"
-  }
+  # setting {
+  #   namespace = "aws:autoscaling:trigger"
+  #   name      = "ScalingAdjustment"
+  #   value     = "1"
+  # }
 
-  setting {
-    namespace = "aws:autoscaling:trigger"
-    name      = "AdjustmentType"
-    value     = "ChangeInCapacity"
-  }
+  # setting {
+  #   namespace = "aws:autoscaling:trigger"
+  #   name      = "AdjustmentType"
+  #   value     = "ChangeInCapacity"
+  # }
 
-   ########################################
+  ########################################
   # Rolling Updates and Deployment Policy
   ########################################
 
@@ -291,7 +382,7 @@ resource "aws_elastic_beanstalk_environment" "vprofile_app_env" {
   setting {
     namespace = "aws:elasticbeanstalk:command"
     name      = "BatchSize"
-    value     = "50"  # deploy to 50% of instances at a time
+    value     = "50" # deploy to 50% of instances at a time
   }
 
   setting {
@@ -305,5 +396,5 @@ resource "aws_elastic_beanstalk_environment" "vprofile_app_env" {
     name      = "Timeout"
     value     = "600"
   }
-  tags                   = merge(local.common_tags, { Name = "${local.name}-web-app" })
+  tags = merge(local.common_tags, { Name = "${local.name}-web-app" })
 }

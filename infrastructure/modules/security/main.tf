@@ -103,6 +103,22 @@ resource "aws_security_group" "backend_sg" {
     security_groups = [aws_security_group.bastion_sg.id]
   }
 
+   ingress {
+    description     = "Allow 11211 from application servers"
+    to_port         = 11211
+    from_port       = 11211
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app_sg.id]
+  }
+
+  ingress {
+    description     = "Allow 5672 from application servers"
+    to_port         = 5671
+    from_port       = 5671
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app_sg.id]
+  }
+
   ingress {
     description = "Allow Internal traffic to flow on all ports"
     to_port     = 0

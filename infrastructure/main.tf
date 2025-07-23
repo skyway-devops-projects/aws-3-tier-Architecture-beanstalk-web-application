@@ -5,6 +5,22 @@ locals {
     CreatedBy   = "Terraform"
   }
 }
+data "aws_acm_certificate" "existing_cert" {
+  domain   = var.root_domain_name
+  statuses = ["ISSUED"]
+  most_recent = true
+}
+
+resource "aws_s3_object" "upload_file" {
+  bucket = var.bucket_artifact_storage
+  key    = "artifact/vprofile-v2.war"
+  source = "../target/vprofile-v2.war" # Path to local file
+}
+
+data "aws_s3_bucket" "existing_bucket" {
+  bucket = var.bucket_artifact_storage
+}
+
 
 module "vpc" {
   source          = "./modules/vpc"
@@ -55,14 +71,30 @@ module "elasticache_radis" {
 }
 
 module "activemq" {
-  source             = "./modules/aws-active-mq"
-  environment        = var.environment
-  project_name       = var.project_name
-  security_group_id  = module.security.db_security_group_id
+  source            = "./modules/aws-active-mq"
+  environment       = var.environment
+  project_name      = var.project_name
+  security_group_id = module.security.db_security_group_id
   private_subnet_id = element(module.vpc.private_subnet_ids, 0)
-  username           = var.active_mq_username
-  password           = var.active_mq_password
-  depends_on         = [module.vpc]
+  username          = var.active_mq_username
+  password          = var.active_mq_password
+  depends_on        = [module.vpc]
+}
+
+module "beanstalk" {
+  source               = "./modules/aws-_beanstalk"
+  environment          = var.environment
+  project_name         = var.project_name
+  vpc_id               = module.vpc.vpc_id
+  lb_security_group_id = module.security.alb_security_group_id
+  security_group_id    = module.security.app_security_group_id
+  key_name             = var.key_name
+  private_subnet_ids   = join(",", module.vpc.private_subnet_ids)
+  public_subnet_ids    = join(",", module.vpc.public_subnet_ids)
+  solution_stack_name = "64bit Amazon Linux 2023 v5.7.1 running Tomcat 9 Corretto 11"
+  certificate_arn = data.aws_acm_certificate.existing_cert.arn
+  bucket_id = data.aws_s3_bucket.existing_bucket.id
+  bucket_key = "artifact/vprofile-v2.war"
 }
 
 resource "aws_instance" "bastion_host" {
@@ -107,4 +139,16 @@ resource "aws_instance" "bastion_host" {
     ]
   }
   depends_on = [module.vpc]
+}
+
+data "aws_route53_zone" "selected_zone" {
+  name         =var.root_domain_name
+  private_zone = false
+}
+resource "aws_route53_record" "beanstalk_alias" {
+  zone_id = data.aws_route53_zone.selected_zone.zone_id
+  name    = "vprofile.${var.root_domain_name}"
+  type    = "CNAME"
+  ttl     = 300
+  records = [module.beanstalk.beanstalk_end_point]
 }

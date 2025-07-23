@@ -120,6 +120,15 @@ variable "instance_type" {
   description = "EC2 instance type"
   type        = string
 }
+variable "root_domain_name" {
+  type = string
+  description = "root domain certificate"
+}
+
+variable "bucket_artifact_storage" {
+  type = string
+  description = "Bucket Name"
+}
 
 # variable "record" {
 #   description =  "Records Ip"
